@@ -4,7 +4,7 @@ Momentum vs. Size and Value (MCAA)
 This contains the R code used in an analysis of the Fama-French momentum factor (UMD) in the context of size, value and the equity market risk premium, indepndently reproducing and building upon the analysis found in "Fact, Fiction, and Momentum Investing" by Asness, Frazzini, Israel and Moskowitz (2014).
 
 The main reasons for releasing the code are:
-- methodoloogical transparency,
+- methodological transparency,
 - inviting community contributions,
 - to permit building on this codebase to perform other financial / economic analysis.
 
