@@ -12,10 +12,13 @@
 # Structure
 
 # We store all the monthly data in an xts time frame with column headings comprisi
-# ng two parts: a) the category and b) the specific data separated by ful-stop ".".
+# ng two parts: a) the category and b) the specific data separated by full-stop ".".
+# The factor itself is stored only with the category part of the name (e.g. dat$UMD
+# gives the momentum factor (UMD).
 
-# For example **dat$UMD.long** contains the monthly long-side returns of the UMD f
-# actor.
+# For example **dat$UMD.long** contains the monthly long-side returns of the UMD
+# factor.
+
 
 # Data
 # ----
@@ -27,19 +30,19 @@
 #	- "bh", "b", "bl": big high, mid and low returns respectively.
 #	- "long" long side returns.
 #	- "short" short side returns.
-#	- "x" the factor
+#	- "" the factor
 
 # HML	- "sh", "sl": small high and low returns respectively.
 #	- "bh", "bl": big high and low returns respectively.
 #	- "long" long side returns.
 #	- "short" short side returns.
-#	- "x" the factor
+#	- "" the factor
 
 # UMD	- "sh", "sl": small high and low returns respectively.
 #	- "bh", "bl": big high and low returns respectively.
 #	- "long" long side returns.
 #	- "short" short side returns.
-#	- "x" the factor
+#	- "" the factor
 
 # Load required packages.
 require(Quandl)   # For using the Quandl API.
@@ -74,7 +77,7 @@ data.list = lapply(data.sets, function(data.set) {
   # We pull the data as type "raw" rather than "xts", then do our own conversion
   # to "xts" to avoid the time index being "yearmon" rather than "Date". Yearmon
   # has implementation issues with time indexing..
-as.xts(x[ , -1], order.by=x[ , 1])
+  as.xts(x[ , -1], order.by=x[ , 1])
 })
 
 names(data.list) = data.sets
@@ -82,8 +85,8 @@ names(data.list) = data.sets
 
 # Extracting the "factors data from the data list".
 dat = data.list$FACTORS_M
-colnames(dat) = c("RMRF", "SMB.x", "HML.x", "RF")
-dat$UMD.x = data.list$MOMENTUM_M
+colnames(dat) = c("RMRF", "SMB", "HML", "RF")
+dat$UMD = data.list$MOMENTUM_M
 
 
 # Pull the data needed to compute "UMD" into the time series frame.

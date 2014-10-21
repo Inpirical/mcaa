@@ -1,4 +1,23 @@
-# Functions for use in MCAA. 
+# Functions for "Re Momentum, Size and Value (MCAA)"
+
+# "CalibStat": data against statistics reported in Asness, Frazzini,
+#   Israel, Moskowitz (2014) for a given function.
+#
+# "HitRatios": percentage of periods with positive returns given window.
+# "SharpeAnnual": annualised sharpe ratio given monthly data.
+#
+# "MixedStrat" : evaluate function over a linear combination of UMD, HML and
+#   SMB factors. 
+#
+# "MovingAvgReturns": moving average log returns from monthly log returns
+# "ReturnsMinusMarket": absolute asset returns net of absolute market returns
+#
+# "MarketAdjReturn": market adjusted return from absolute return and market returns
+#   using linear regression to estimate alpha.
+#
+# "MovingMarketAdjustedReturn": series of adjusted return calculations given
+#   a fixed-length trailing window.
+
 
 CalibStat = function(dat, fun, columns=c("RMRF", "SMB", "HML", "UMD"),
   end.year=2013, start.years=c(1927, 1963, 1991)) {
@@ -16,8 +35,12 @@ CalibStat = function(dat, fun, columns=c("RMRF", "SMB", "HML", "UMD"),
 
   # Returns:
   # Results of the function per start year and per factor (matrix)
+
+  # Subset the data on the columns we want to analyse.
   dat = dat[ , columns]
 
+  # Apply the chosen function to the data subset for the desidered time range
+  # determined byt "end.year" and "start.year".
   x = sapply(dat, function(d) {
     sapply(start.years, function(start.year) {
       d = d[paste0(start.year, "::", end.year)]
@@ -25,7 +48,10 @@ CalibStat = function(dat, fun, columns=c("RMRF", "SMB", "HML", "UMD"),
     })
   })
 
+  # Format the row names.
   rownames(x) = paste0(start.years, "-", end.year)
+
+  # Return the results.
   x
 }
 
@@ -45,9 +71,14 @@ HitRatios = function(dat, months) {
   })
 }
 
+
 SharpeAnnual = function(x) {
   # Computes annualised sharpe ratio given monthly data.
-  (mean(x, na.rm=TRUE) / sd(x, na.rm=TRUE)) * sqrt(12)
+  # Arguments: "x" time series of monthly log returns (xts)
+  # Returns: annualised sharpe ratio (numeric)
+
+  sharpe.monthly = (mean(x, na.rm=TRUE) / sd(x, na.rm=TRUE))
+  sharpe.monthly * sqrt(12)   # Annualise ratio.
 }
 
 
@@ -63,6 +94,10 @@ MixedStrat = function(dat, fun, w1, w2) {
 
   # Returns:
   # the result of the function applied to the time series of the mixed factor.
+
+  # We essentially compute the weights for each factor, apply the weights
+  # (multiply) to each factor and add the weighted reutrns together (since we
+  # are dealing with log returns).
 
   fun(
     (dat$UMD * w1) +
@@ -84,3 +119,62 @@ MovingAvgReturns = function(results, ma.periods) {
   na.omit(as.xts(as.numeric(x), order.by=index(results)))
 }
 
+
+ReturnsMinusMarket = function(x, rmrf, rf) {
+  # Calculates returns net of market.
+
+  # Arguments:
+  # "x" absolute returns time series of an asset (xts).
+  # "rmrf" excess returns time series of the market over risk free rate (xts).
+  # "rf" time series of the risk free rate (xts).
+
+  # Returns:
+  # time series of excess returns of asset over market returns (xts).
+
+  x - rmrf - rf   # Risk free rate deducted to get absolute market returns.
+}
+
+
+MarketAdjReturn = function(x, rmrf, rf){
+  # Calculates the market adjusted return from the absolute returns of an asset.
+
+  # Arguments:
+  # "x" time series of log returns of the asset (xts)
+  # "rmrf" time series of excess returns of the whole market (xts)
+  # "rf" time series of risk free rate (xts)
+
+  # Returns:
+  # The estimated market adjusted periodic return of the asset (numeric)
+
+  excess.returns = x - rf   # Absolute asset return minus risk-free rate.
+ 
+  # Linearly regress asset excess returns market excess returns and use the
+  # intercept as an estimate of the asset market-adjusted returns.
+  lm((x -rf) ~ (rmrf))$coefficients[["(Intercept)"]]
+}
+
+
+MovingMarketAdjustedReturn = function(x, rmrf, rf, periods) {
+  # Calculates the market adjusted return based on a trailing window of
+  # fixed length given a returns time series.
+
+  # Arguments:
+  # "x" time series of log returns of the asset (xts)
+  # "rmrf" time series of excess returns of the whole market (xts)
+  # "rf" time series of risk free rate (xts)
+  # "periods" number of months lenght of the trailing window (numeric)
+
+  # Returns:
+  # a series of moving market adjusted returns (xts)
+
+  
+  sapply((periods + 1):(nrow(x) - periods), function(i) {
+
+    # Calculate the rows corresponding to the period and window size.
+    rows = (i - periods + 1):i
+
+    # Calculate the market adjusted return for the relevant rows.
+    MarketAdjReturn(x[rows, ], rmrf[rows, ], rf[rows, ])
+
+  })
+}
